@@ -2,11 +2,12 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.InputMismatchException;
+import java.util.logging.Logger;
 
 public class Labyrinth {
 
     private static char[][] mapMatrix;
-    private static Point position;
+    private static Point currentPosition;
     private static int rowNumber;
     private static int totalMovements;
     private static Point[] path;
@@ -14,12 +15,12 @@ public class Labyrinth {
 
     public static void main(String[] args) {
 
-       readLab("C:\\Users\\Julian\\Projects\\Labyrynth\\mapmio.txt");
+       readLab("C:\\Users\\Julian\\Projects\\Labyrynth\\map.txt");
        startLab();
 
-       while (finished==false && position.x > 0){
+       while (finished==false && currentPosition.x > 0){
            move(findBestMovement());
-           position.x--;
+           currentPosition.x--;
        };
 
        printMap();
@@ -29,13 +30,13 @@ public class Labyrinth {
 
     private static void move(Point nextMove) {
 
-        //check if the movement is right or left from my position
-        int steps = nextMove.y - position.y;
+        //check if the movement is right or left from my currentPosition
+        int steps = nextMove.y - currentPosition.y ;
         if (steps<0) {
             //left movement
 
-            for (int i=nextMove.y; i<position.y ; i++){
-                mapMatrix[position.x][i] = '.';
+            for (int i = nextMove.y; i< currentPosition.y ; i++){
+                mapMatrix[currentPosition.x][i] = '.';
             }
 
         } else {
@@ -43,15 +44,18 @@ public class Labyrinth {
             if (steps>0) {
 
                 //right movement
-                for (int i = position.y; i < nextMove.y; i++) {
-                    mapMatrix[position.x][i] = '.';
+
+                for (int i = currentPosition.y; i < nextMove.y; i++) {
+                    mapMatrix[currentPosition.x][i] = '.';
                 }
             } else {
-                mapMatrix[position.x][position.y] = '.';
+
+                //straight
+                mapMatrix[currentPosition.x][currentPosition.y] = '.';
             }
         }
-        mapMatrix[position.x-1][nextMove.y] = '.';
-        String printLine = new String(mapMatrix[position.x-1]);
+        //mapMatrix[currentPosition.x-1][nextMove.y] = '.';
+        String printLine = new String(mapMatrix[currentPosition.x-1]);
         //System.out.println(printLine);
 
     }
@@ -63,10 +67,10 @@ public class Labyrinth {
       int colNumber = firstLineStr.indexOf('I');
 
       if (colNumber != -1){
-          position = new Point(rowNumber, colNumber);
+          currentPosition = new Point(rowNumber, colNumber);
           totalMovements = 0;
           finished = false;
-         //System.out.println("Movement number: "+ totalMovements +  " | Current position is: "+position.toString());
+         //System.out.println("Movement number: "+ totalMovements +  " | Current currentPosition is: "+currentPosition.toString());
       } else {
           throw new InputMismatchException("Map does not contain starting point represented by letter I");
       }
@@ -74,55 +78,59 @@ public class Labyrinth {
 
     private static void printMap() {
 
+        System.out.println("============== Lab finished Map ====================");
         for (char[] matrix : mapMatrix) {
             String line = new String(matrix);
             System.out.println(matrix);
         }
+        System.out.println("============== Lab finished Map ====================");
     }
 
     private static Point findBestMovement() {
 
-        //get row above my current position
-        int nextRow = position.x-1;
+        //get row above my current currentPosition
+        int nextRow = currentPosition.x-1;
         char[] nextRowChars = mapMatrix[nextRow];
         int minSteps = nextRowChars.length;
-        int i = 0;
-        Point nextMovement = new Point(position.x-1,position.y);
+        int currentCharPosition = 0;
+        Point nextMovement = new Point(currentPosition.x-1, currentPosition.y);
         boolean foundMovement = false;
 
         for (char currentChar : nextRowChars){
 
             //stepsNeeded to get to currentChar being analyzed
-            int stepsNeeded = Math.abs(i-position.y);
+            int stepsNeeded = Math.abs(currentCharPosition- currentPosition.y);
 
             if (currentChar == 'E'){
                 //exit found!
                 finished = true;
                 minSteps = stepsNeeded;
-                nextMovement.y = currentChar;
+                nextMovement.y = currentCharPosition;
                 foundMovement = true;
-            }
-            if (currentChar!='_'){
+                break;
+            } else {
+                if (currentChar != '_') {
 
-                //if not wall
+                    //if not wall
 
-                if (currentChar==' ' && (stepsNeeded < minSteps ) || minSteps == 0){
-                    //if found a way through and it's the closest to my position...
-                    minSteps = stepsNeeded;
-                    nextMovement.y = i;
-                    foundMovement = true;
-                } else {
-
-                    //Is the penalty lower?
-                    int penalty = new Integer(currentChar);
-                    if ( penalty + stepsNeeded < minSteps) {
-                        minSteps = penalty + stepsNeeded;
-                        nextMovement.y = i;
+                    if (currentChar == ' ' && (stepsNeeded < minSteps) || minSteps == 0) {
+                        //if found a way through and it's the closest to my currentPosition...
+                        minSteps = stepsNeeded;
+                        nextMovement.y = currentCharPosition;
                         foundMovement = true;
+                    } else {
+
+                        int penalty = Character.getNumericValue(currentChar);
+                        //Does the path through the penalty takes less than minSteps?
+                        if (penalty + stepsNeeded < minSteps) {
+                            minSteps = penalty + stepsNeeded;
+                            nextMovement.y = currentCharPosition;
+                            foundMovement = true;
+                        }
                     }
                 }
             }
-            i++;
+            currentCharPosition++;
         }
 
         if (!foundMovement){
@@ -146,11 +154,14 @@ public class Labyrinth {
             int i=0;
             int j=0;
 
+            System.out.println("============== Original Map ====================");
             while ((currentRow = br.readLine()) != null) {
+
                 System.out.println(currentRow);
                 mapMatrix[i] = currentRow.toCharArray();
                 i++;
             }
+            System.out.println("============== Original Map ====================");
 
             //assuming the last line in the file always contains starting point
             rowNumber = i-1;
